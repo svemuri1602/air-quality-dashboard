@@ -6,6 +6,7 @@ import gdown
 import os
 from datetime import datetime
 
+# Page configuration
 st.set_page_config(layout="wide", page_title="Air Quality Dashboard")
 
 @st.cache_data
@@ -96,32 +97,12 @@ def main():
         st.header("Indoor Air Quality")
         date_range, hour_range, column, cooking_filter, time_col = create_sidebar_filters(indoor_df, "indoor")
         filtered = filter_data(indoor_df, date_range, hour_range, cooking_filter, time_col)
-
-        # ✅ Only one download button created per tab
-        st.download_button(
-            "Download Filtered Data as CSV",
-            data=filtered.to_csv(index=False).encode("utf-8"),
-            file_name="indoor_filtered_data.csv",
-            mime="text/csv",
-            key="download_button_indoor"
-        )
-
         create_visualizations(filtered, column, time_col, "indoor")
 
     else:
         st.header("Outdoor Air Quality")
         date_range, hour_range, column, cooking_filter, time_col = create_sidebar_filters(outdoor_df, "outdoor")
         filtered = filter_data(outdoor_df, date_range, hour_range, cooking_filter, time_col)
-
-        # ✅ Only one download button created per tab
-        st.download_button(
-            "Download Filtered Data as CSV",
-            data=filtered.to_csv(index=False).encode("utf-8"),
-            file_name="outdoor_filtered_data.csv",
-            mime="text/csv",
-            key="download_button_outdoor"
-        )
-
         create_visualizations(filtered, column, time_col, "outdoor")
 
     st.markdown("---")
