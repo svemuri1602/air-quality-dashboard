@@ -63,24 +63,44 @@ def apply_filters(df, date_range, hour_range, cooking_filter, time_col):
         df_filtered = df_filtered[df_filtered['Cooking'] == 1]
     return df_filtered
 
-# Plotting
+# Plotting with summary and export
+
 def plot_data(df, column, time_col):
     if df.empty:
         st.warning("No data available for the selected filters.")
         return
+
+    # Show summary stats
+    st.subheader("Summary Statistics")
+    st.write(df[[column]].describe())
+
+    # Threshold alert for PM2.5
+    if column.lower() == 'pm2.5' and df[column].max() > 100:
+        st.error("⚠️ Alert: PM2.5 has exceeded 100 at some points in the selected data.")
 
     # Downsample large datasets
     max_points = 1000
     if len(df) > max_points:
         df = df.sample(n=max_points).sort_values(time_col)
 
+    # Charts
     st.line_chart(df.set_index(time_col)[column])
     st.bar_chart(df.set_index(time_col)[column])
+
+    # Correlation heatmap
     st.write("Correlation Heatmap")
     corr = df.select_dtypes(include='number').corr()
     fig, ax = plt.subplots()
     sns.heatmap(corr, annot=True, ax=ax)
     st.pyplot(fig)
+
+    # CSV export
+    st.download_button(
+        label="📥 Download Filtered Data as CSV",
+        data=df.to_csv(index=False).encode('utf-8'),
+        file_name="filtered_data.csv",
+        mime="text/csv"
+    )
 
 # Main UI
 tabs = st.tabs(["Indoor Air Quality", "Outdoor Air Quality"])
