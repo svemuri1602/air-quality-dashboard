@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -6,7 +5,7 @@ import seaborn as sns
 
 st.set_page_config(layout="wide")
 
-# Load data from Google Drive
+# Load data from Google Drive with flexible datetime parsing
 @st.cache_data
 def load_data():
     indoor_url = "https://drive.google.com/uc?export=download&id=1YPNmFBB5xo2QJr05NR0elhLEceXA6XBZ"
@@ -15,12 +14,22 @@ def load_data():
     indoor = pd.read_csv(indoor_url)
     outdoor = pd.read_csv(outdoor_url)
 
-    # Clean column names and convert datetime
+    # Clean column names
     indoor.columns = indoor.columns.str.strip()
     outdoor.columns = outdoor.columns.str.strip()
 
-    indoor['Datetime'] = pd.to_datetime(indoor['Datetime'], errors='coerce')
-    outdoor['DateTime'] = pd.to_datetime(outdoor['DateTime'], errors='coerce')
+    # Debugging: display columns
+    st.write("Indoor CSV Columns:", indoor.columns.tolist())
+    st.write("Outdoor CSV Columns:", outdoor.columns.tolist())
+
+    # Convert appropriate datetime column
+    if 'Datetime' in indoor.columns:
+        indoor['Datetime'] = pd.to_datetime(indoor['Datetime'], errors='coerce')
+    elif 'DateTime' in indoor.columns:
+        indoor['DateTime'] = pd.to_datetime(indoor['DateTime'], errors='coerce')
+
+    if 'DateTime' in outdoor.columns:
+        outdoor['DateTime'] = pd.to_datetime(outdoor['DateTime'], errors='coerce')
 
     return indoor, outdoor
 
@@ -78,4 +87,3 @@ with tabs[1]:
 
 st.markdown("---")
 st.markdown("Developed with ❤️ using Streamlit")
-
