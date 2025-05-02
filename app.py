@@ -65,7 +65,7 @@ def apply_filters(df, date_range, hour_range, cooking_filter, time_col):
 
 # Plotting with summary and export
 
-def plot_data(df, column, time_col):
+def plot_data(df, column, time_col, prefix):
     if df.empty:
         st.warning("No data available for the selected filters.")
         return
@@ -94,12 +94,13 @@ def plot_data(df, column, time_col):
     sns.heatmap(corr, annot=True, ax=ax)
     st.pyplot(fig)
 
-    # CSV export
+    # CSV export with unique key
     st.download_button(
         label="📥 Download Filtered Data as CSV",
         data=df.to_csv(index=False).encode('utf-8'),
-        file_name="filtered_data.csv",
-        mime="text/csv"
+        file_name=f"filtered_data_{prefix}.csv",
+        mime="text/csv",
+        key=f"download_btn_{prefix}"
     )
 
 # Main UI
@@ -110,14 +111,14 @@ with tabs[0]:
     with st.spinner("Loading indoor data and visualizations..."):
         date_range, hour_range, column, cooking_filter, time_col = sidebar_filters(indoor_df, prefix="indoor")
         filtered = apply_filters(indoor_df, date_range, hour_range, cooking_filter, time_col)
-        plot_data(filtered, column, time_col)
+        plot_data(filtered, column, time_col, prefix="indoor")
 
 with tabs[1]:
     st.header("Outdoor Air Quality Dashboard")
     with st.spinner("Loading outdoor data and visualizations..."):
         date_range, hour_range, column, cooking_filter, time_col = sidebar_filters(outdoor_df, prefix="outdoor")
         filtered = apply_filters(outdoor_df, date_range, hour_range, cooking_filter, time_col)
-        plot_data(filtered, column, time_col)
+        plot_data(filtered, column, time_col, prefix="outdoor")
 
 st.markdown("---")
 st.markdown("Developed with ❤️ using Streamlit")
