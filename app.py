@@ -63,7 +63,7 @@ def apply_filters(df, date_range, hour_range, cooking_filter, time_col):
         df_filtered = df_filtered[df_filtered['Cooking'] == 1]
     return df_filtered
 
-# Plotting with summary and export
+# Plotting with summary only
 
 def plot_data(df, column, time_col, prefix):
     if df.empty:
@@ -93,15 +93,6 @@ def plot_data(df, column, time_col, prefix):
     fig, ax = plt.subplots()
     sns.heatmap(corr, annot=True, ax=ax)
     st.pyplot(fig)
-
-    # CSV export with unique key including column
-    st.download_button(
-        label="📥 Download Filtered Data as CSV",
-        data=df.to_csv(index=False).encode('utf-8'),
-        file_name=f"filtered_data_{prefix}.csv",
-        mime="text/csv",
-        key=f"download_btn_{prefix}_{column}"
-    )
 
 # Main UI
 tabs = st.tabs(["Indoor Air Quality", "Outdoor Air Quality"])
