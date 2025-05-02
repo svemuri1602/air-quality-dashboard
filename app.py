@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -6,7 +5,6 @@ import gdown
 import os
 from datetime import datetime
 
-# Page configuration
 st.set_page_config(layout="wide", page_title="Air Quality Dashboard")
 
 @st.cache_data
