@@ -37,22 +37,22 @@ def load_data():
 def create_sidebar_filters(df, prefix):
     st.sidebar.markdown(f"### {prefix} Filters")
     time_col = 'Datetime' if 'Datetime' in df.columns else 'DateTime'
-    
+
     min_date = df[time_col].min().date()
     max_date = df[time_col].max().date()
-    
+
     date_range = st.sidebar.date_input(
         "Select Date Range",
         [min_date, max_date],
         key=f"{prefix}_date_range"
     )
-    
+
     hour_range = st.sidebar.slider(
         "Select Hour Range",
         0, 23, (0, 23),
         key=f"{prefix}_hour_range"
     )
-    
+
     numeric_cols = [col for col in df.select_dtypes(include='number').columns 
                    if col.lower() != 'entry_id']
     column = st.sidebar.selectbox(
@@ -60,7 +60,7 @@ def create_sidebar_filters(df, prefix):
         numeric_cols,
         key=f"{prefix}_parameter"
     )
-    
+
     cooking_filter = False
     if 'Cooking' in df.columns:
         cooking_filter = st.sidebar.checkbox(
@@ -68,7 +68,7 @@ def create_sidebar_filters(df, prefix):
             value=False,
             key=f"{prefix}_cooking_filter"
         )
-    
+
     return date_range, hour_range, column, cooking_filter, time_col
 
 def filter_data(df, date_range, hour_range, cooking_filter, time_col):
@@ -78,25 +78,34 @@ def filter_data(df, date_range, hour_range, cooking_filter, time_col):
         (df[time_col].dt.hour >= hour_range[0]) &
         (df[time_col].dt.hour <= hour_range[1])
     ]
-    
+
     if cooking_filter:
         filtered = filtered[filtered['Cooking'] == 1]
-    
+
     return filtered
 
 def create_visualizations(df, column, time_col, prefix):
     if df.empty:
         st.warning("No data available for the selected filters.")
         return
-    
+
+    # CSV Download Button (Fixing duplicate key error)
+    st.download_button(
+        label="Download Filtered Data as CSV",
+        data=df.to_csv(index=False).encode("utf-8"),
+        file_name=f"{prefix}_filtered_data.csv",
+        mime="text/csv",
+        key=f"download_button_{prefix}"
+    )
+
     # Summary statistics
     with st.expander("Summary Statistics"):
         st.dataframe(df[column].describe())
-    
+
     # Alert for high PM2.5
     if column.lower() == 'pm2.5' and df[column].max() > 100:
         st.error("⚠️ High PM2.5 Alert: Levels exceeded 100")
-    
+
     # Line chart
     st.subheader("Time Series")
     fig = px.line(
@@ -106,7 +115,7 @@ def create_visualizations(df, column, time_col, prefix):
         title=f"{column} over Time"
     )
     st.plotly_chart(fig, use_container_width=True)
-    
+
     # Correlation heatmap (simplified)
     st.subheader("Correlation Matrix")
     numeric_df = df.select_dtypes(include='number')
@@ -123,10 +132,10 @@ def create_visualizations(df, column, time_col, prefix):
 
 def main():
     st.title("Air Quality Dashboard")
-    
+
     # Load data
     indoor_df, outdoor_df = load_data()
-    
+
     # Tab selection
     tab = st.radio(
         "Select Dashboard:",
@@ -134,9 +143,9 @@ def main():
         horizontal=True,
         key="tab_selector"
     )
-    
+
     st.session_state.current_tab = tab
-    
+
     if tab == "Indoor":
         st.header("Indoor Air Quality")
         date_range, hour_range, column, cooking_filter, time_col = create_sidebar_filters(
@@ -155,9 +164,10 @@ def main():
             outdoor_df, date_range, hour_range, cooking_filter, time_col
         )
         create_visualizations(filtered, column, time_col, "outdoor")
-    
+
     st.markdown("---")
     st.markdown("Developed with Streamlit")
 
 if __name__ == "__main__":
     main()
+
