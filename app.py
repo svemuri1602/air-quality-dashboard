@@ -34,21 +34,21 @@ def load_data():
 
 indoor_df, outdoor_df = load_data()
 
-# Sidebar for filters
+# Sidebar for filters with fully unique keys
 
-def sidebar_filters(df, key_prefix):
+def sidebar_filters(df, prefix):
     st.sidebar.markdown("### Filters")
     time_col = 'Datetime' if 'Datetime' in df.columns else 'DateTime'
     date_range = st.sidebar.date_input(
-        f"Select Date Range",  # Label must be unique across widgets
+        f"Select Date Range ({prefix})",
         [df[time_col].min().date(), df[time_col].max().date()],
-        key=f"{key_prefix}_date"
+        key=f"{prefix}_date"
     )
-    hour_range = st.sidebar.slider("Select Hour Range", 0, 23, (0, 23), key=f"{key_prefix}_hour")
+    hour_range = st.sidebar.slider(f"Select Hour Range ({prefix})", 0, 23, (0, 23), key=f"{prefix}_hour")
     cols = df.select_dtypes(include='number').columns.tolist()
     cols = [c for c in cols if c.lower() != 'entry_id']
-    column = st.sidebar.selectbox("Select Parameter", cols, key=f"{key_prefix}_col")
-    cooking_filter = st.sidebar.checkbox("Show only Cooking Time", value=False, key=f"{key_prefix}_cook")
+    column = st.sidebar.selectbox(f"Select Parameter ({prefix})", cols, key=f"{prefix}_col")
+    cooking_filter = st.sidebar.checkbox(f"Show only Cooking Time ({prefix})", value=False, key=f"{prefix}_cook")
     return date_range, hour_range, column, cooking_filter, time_col
 
 # Apply filters
@@ -88,14 +88,14 @@ tabs = st.tabs(["Indoor Air Quality", "Outdoor Air Quality"])
 with tabs[0]:
     st.header("Indoor Air Quality Dashboard")
     with st.spinner("Loading indoor data and visualizations..."):
-        date_range, hour_range, column, cooking_filter, time_col = sidebar_filters(indoor_df, key_prefix="indoor")
+        date_range, hour_range, column, cooking_filter, time_col = sidebar_filters(indoor_df, prefix="indoor")
         filtered = apply_filters(indoor_df, date_range, hour_range, cooking_filter, time_col)
         plot_data(filtered, column, time_col)
 
 with tabs[1]:
     st.header("Outdoor Air Quality Dashboard")
     with st.spinner("Loading outdoor data and visualizations..."):
-        date_range, hour_range, column, cooking_filter, time_col = sidebar_filters(outdoor_df, key_prefix="outdoor")
+        date_range, hour_range, column, cooking_filter, time_col = sidebar_filters(outdoor_df, prefix="outdoor")
         filtered = apply_filters(outdoor_df, date_range, hour_range, cooking_filter, time_col)
         plot_data(filtered, column, time_col)
 
