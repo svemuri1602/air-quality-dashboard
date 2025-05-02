@@ -2,34 +2,30 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import gdown
 
 st.set_page_config(layout="wide")
 
-# Load data from Google Drive with flexible datetime parsing
+# Load data from Google Drive using gdown
 @st.cache_data
 def load_data():
-    indoor_url = "https://drive.google.com/uc?export=download&id=1YPNmFBB5xo2QJr05NR0elhLEceXA6XBZ"
-    outdoor_url = "https://drive.google.com/uc?export=download&id=1nA15O8JQPNmg0ph2uXkV7E-R4tFQwEqQ"
+    # Google Drive file IDs
+    indoor_id = "1YPNmFBB5xo2QJr05NR0elhLEceXA6XBZ"
+    outdoor_id = "1nA15O8JQPNmg0ph2uXkV7E-R4tFQwEqQ"
 
-    indoor = pd.read_csv(indoor_url)
-    outdoor = pd.read_csv(outdoor_url)
+    # Download from Google Drive
+    gdown.download(f"https://drive.google.com/uc?id={indoor_id}", "indoor.csv", quiet=False)
+    gdown.download(f"https://drive.google.com/uc?id={outdoor_id}", "outdoor.csv", quiet=False)
 
-    # Clean column names
+    # Load CSVs
+    indoor = pd.read_csv("indoor.csv")
+    outdoor = pd.read_csv("outdoor.csv")
+
+    # Clean and convert datetime
     indoor.columns = indoor.columns.str.strip()
     outdoor.columns = outdoor.columns.str.strip()
-
-    # Debugging: display columns
-    st.write("Indoor CSV Columns:", indoor.columns.tolist())
-    st.write("Outdoor CSV Columns:", outdoor.columns.tolist())
-
-    # Convert appropriate datetime column
-    if 'Datetime' in indoor.columns:
-        indoor['Datetime'] = pd.to_datetime(indoor['Datetime'], errors='coerce')
-    elif 'DateTime' in indoor.columns:
-        indoor['DateTime'] = pd.to_datetime(indoor['DateTime'], errors='coerce')
-
-    if 'DateTime' in outdoor.columns:
-        outdoor['DateTime'] = pd.to_datetime(outdoor['DateTime'], errors='coerce')
+    indoor['Datetime'] = pd.to_datetime(indoor['Datetime'], errors='coerce')
+    outdoor['DateTime'] = pd.to_datetime(outdoor['DateTime'], errors='coerce')
 
     return indoor, outdoor
 
