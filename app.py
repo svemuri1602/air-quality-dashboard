@@ -7,24 +7,19 @@ import os
 
 st.set_page_config(layout="wide")
 
-# Load data from Google Drive using gdown with local caching
 @st.cache_data
 def load_data():
-    # Google Drive file IDs
     indoor_id = "1YPNmFBB5xo2QJr05NR0elhLEceXA6XBZ"
     outdoor_id = "1nA15O8JQPNmg0ph2uXkV7E-R4tFQwEqQ"
 
-    # Download only if files are not already present
     if not os.path.exists("indoor.csv"):
         gdown.download(f"https://drive.google.com/uc?id={indoor_id}", "indoor.csv", quiet=False, fuzzy=True)
     if not os.path.exists("outdoor.csv"):
         gdown.download(f"https://drive.google.com/uc?id={outdoor_id}", "outdoor.csv", quiet=False)
 
-    # Load CSVs
     indoor = pd.read_csv("indoor.csv")
     outdoor = pd.read_csv("outdoor.csv")
 
-    # Clean and convert datetime
     indoor.columns = indoor.columns.str.strip()
     outdoor.columns = outdoor.columns.str.strip()
     indoor['Datetime'] = pd.to_datetime(indoor['Datetime'], errors='coerce')
@@ -33,8 +28,6 @@ def load_data():
     return indoor, outdoor
 
 indoor_df, outdoor_df = load_data()
-
-# Sidebar for filters with fully unique keys
 
 def sidebar_filters(df, prefix):
     st.sidebar.markdown("### Filters")
@@ -51,7 +44,6 @@ def sidebar_filters(df, prefix):
     cooking_filter = st.sidebar.checkbox(f"Show only Cooking Time ({prefix})", value=False, key=f"{prefix}_cook")
     return date_range, hour_range, column, cooking_filter, time_col
 
-# Apply filters
 def apply_filters(df, date_range, hour_range, cooking_filter, time_col):
     df_filtered = df[
         (df[time_col].dt.date >= date_range[0]) &
@@ -63,38 +55,30 @@ def apply_filters(df, date_range, hour_range, cooking_filter, time_col):
         df_filtered = df_filtered[df_filtered['Cooking'] == 1]
     return df_filtered
 
-# Plotting with summary only
-
 def plot_data(df, column, time_col, prefix):
     if df.empty:
         st.warning("No data available for the selected filters.")
         return
 
-    # Show summary stats
     st.subheader("Summary Statistics")
     st.write(df[[column]].describe())
 
-    # Threshold alert for PM2.5
     if column.lower() == 'pm2.5' and df[column].max() > 100:
         st.error("⚠️ Alert: PM2.5 has exceeded 100 at some points in the selected data.")
 
-    # Downsample large datasets
     max_points = 1000
     if len(df) > max_points:
         df = df.sample(n=max_points).sort_values(time_col)
 
-    # Charts
     st.line_chart(df.set_index(time_col)[column])
     st.bar_chart(df.set_index(time_col)[column])
 
-    # Correlation heatmap
     st.write("Correlation Heatmap")
     corr = df.select_dtypes(include='number').corr()
     fig, ax = plt.subplots()
     sns.heatmap(corr, annot=True, ax=ax)
     st.pyplot(fig)
 
-# Main UI
 tabs = st.tabs(["Indoor Air Quality", "Outdoor Air Quality"])
 
 with tabs[0]:
@@ -113,4 +97,3 @@ with tabs[1]:
 
 st.markdown("---")
 st.markdown("Developed with ❤️ using Streamlit")
-
