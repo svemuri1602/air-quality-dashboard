@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+import matplotlib.pyplot as plt
+import seaborn as sns
 import gdown
 import os
-from datetime import datetime
 
-st.set_page_config(layout="wide", page_title="Air Quality Dashboard")
+st.set_page_config(layout="wide")
 
 @st.cache_data
 def load_data():
@@ -13,7 +13,7 @@ def load_data():
     outdoor_id = "1nA15O8JQPNmg0ph2uXkV7E-R4tFQwEqQ"
 
     if not os.path.exists("indoor.csv"):
-        gdown.download(f"https://drive.google.com/uc?id={indoor_id}", "indoor.csv", quiet=False)
+        gdown.download(f"https://drive.google.com/uc?id={indoor_id}", "indoor.csv", quiet=False, fuzzy=True)
     if not os.path.exists("outdoor.csv"):
         gdown.download(f"https://drive.google.com/uc?id={outdoor_id}", "outdoor.csv", quiet=False)
 
@@ -27,84 +27,72 @@ def load_data():
 
     return indoor, outdoor
 
-def create_sidebar_filters(df, prefix):
-    with st.sidebar:
-        st.markdown(f"### {prefix.capitalize()} Filters")
-        time_col = 'Datetime' if 'Datetime' in df.columns else 'DateTime'
+indoor_df, outdoor_df = load_data()
 
-        min_date = df[time_col].min().date()
-        max_date = df[time_col].max().date()
-
-        date_range = st.date_input("Select Date Range", [min_date, max_date], key=f"{prefix}_date_range")
-        hour_range = st.slider("Select Hour Range", 0, 23, (0, 23), key=f"{prefix}_hour_range")
-
-        numeric_cols = [col for col in df.select_dtypes(include='number').columns if col.lower() != 'entry_id']
-        column = st.selectbox("Select Parameter", numeric_cols, key=f"{prefix}_parameter")
-
-        cooking_filter = False
-        if 'Cooking' in df.columns:
-            cooking_filter = st.checkbox("Show only Cooking Time", value=False, key=f"{prefix}_cooking")
-
+def sidebar_filters(df, prefix):
+    st.sidebar.markdown("### Filters")
+    time_col = 'Datetime' if 'Datetime' in df.columns else 'DateTime'
+    date_range = st.sidebar.date_input(
+        f"Select Date Range ({prefix})",
+        [df[time_col].min().date(), df[time_col].max().date()],
+        key=f"{prefix}_date"
+    )
+    hour_range = st.sidebar.slider(f"Select Hour Range ({prefix})", 0, 23, (0, 23), key=f"{prefix}_hour")
+    cols = df.select_dtypes(include='number').columns.tolist()
+    cols = [c for c in cols if c.lower() != 'entry_id']
+    column = st.sidebar.selectbox(f"Select Parameter ({prefix})", cols, key=f"{prefix}_col")
+    cooking_filter = st.sidebar.checkbox(f"Show only Cooking Time ({prefix})", value=False, key=f"{prefix}_cook")
     return date_range, hour_range, column, cooking_filter, time_col
 
-def filter_data(df, date_range, hour_range, cooking_filter, time_col):
-    filtered = df[
+def apply_filters(df, date_range, hour_range, cooking_filter, time_col):
+    df_filtered = df[
         (df[time_col].dt.date >= date_range[0]) &
         (df[time_col].dt.date <= date_range[1]) &
         (df[time_col].dt.hour >= hour_range[0]) &
         (df[time_col].dt.hour <= hour_range[1])
     ]
+    if cooking_filter and 'Cooking' in df.columns:
+        df_filtered = df_filtered[df_filtered['Cooking'] == 1]
+    return df_filtered
 
-    if cooking_filter:
-        filtered = filtered[filtered['Cooking'] == 1]
-
-    return filtered
-
-def create_visualizations(df, column, time_col, prefix):
+def plot_data(df, column, time_col, prefix):
     if df.empty:
         st.warning("No data available for the selected filters.")
         return
 
-    with st.expander("Summary Statistics", expanded=False):
-        st.dataframe(df[column].describe())
+    st.subheader("Summary Statistics")
+    st.write(df[[column]].describe())
 
     if column.lower() == 'pm2.5' and df[column].max() > 100:
-        st.error("⚠️ High PM2.5 Alert: Levels exceeded 100")
+        st.error("⚠️ Alert: PM2.5 has exceeded 100 at some points in the selected data.")
 
-    st.subheader("Time Series")
-    fig_line = px.line(df, x=time_col, y=column, title=f"{column} over Time")
-    st.plotly_chart(fig_line, use_container_width=True)
+    max_points = 1000
+    if len(df) > max_points:
+        df = df.sample(n=max_points).sort_values(time_col)
 
-    st.subheader("Correlation Matrix")
-    numeric_df = df.select_dtypes(include='number')
-    if len(numeric_df.columns) > 1:
-        corr = numeric_df.corr()
-        fig_corr = px.imshow(corr, text_auto=True, title="Feature Correlations")
-        st.plotly_chart(fig_corr, use_container_width=True)
-    else:
-        st.info("Not enough numeric columns for correlation matrix")
+    st.line_chart(df.set_index(time_col)[column])
+    st.bar_chart(df.set_index(time_col)[column])
 
-def main():
-    st.title("Air Quality Dashboard")
+    st.write("Correlation Heatmap")
+    corr = df.select_dtypes(include='number').corr()
+    fig, ax = plt.subplots()
+    sns.heatmap(corr, annot=True, ax=ax)
+    st.pyplot(fig)
 
-    indoor_df, outdoor_df = load_data()
+tabs = st.tabs(["Indoor Air Quality", "Outdoor Air Quality"])
 
-    tab = st.radio("Select Dashboard:", ["Indoor", "Outdoor"], horizontal=True, key="dashboard_tab")
+with tabs[0]:
+    st.header("Indoor Air Quality Dashboard")
+    with st.spinner("Loading indoor data and visualizations..."):
+        date_range, hour_range, column, cooking_filter, time_col = sidebar_filters(indoor_df, prefix="indoor")
+        filtered = apply_filters(indoor_df, date_range, hour_range, cooking_filter, time_col)
+        plot_data(filtered, column, time_col, prefix="indoor")
 
-    if tab == "Indoor":
-        st.header("Indoor Air Quality")
-        date_range, hour_range, column, cooking_filter, time_col = create_sidebar_filters(indoor_df, "indoor")
-        filtered = filter_data(indoor_df, date_range, hour_range, cooking_filter, time_col)
-        create_visualizations(filtered, column, time_col, "indoor")
+with tabs[1]:
+    st.header("Outdoor Air Quality Dashboard")
+    with st.spinner("Loading outdoor data and visualizations..."):
+        date_range, hour_range, column, cooking_filter, time_col = sidebar_filters(outdoor_df, prefix="outdoor")
+        filtered = apply_filters(outdoor_df, date_range, hour_range, cooking_filter, time_col)
+        plot_data(filtered, column, time_col, prefix="outdoor")
 
-    else:
-        st.header("Outdoor Air Quality")
-        date_range, hour_range, column, cooking_filter, time_col = create_sidebar_filters(outdoor_df, "outdoor")
-        filtered = filter_data(outdoor_df, date_range, hour_range, cooking_filter, time_col)
-        create_visualizations(filtered, column, time_col, "outdoor")
-
-    st.markdown("---")
-    st.markdown("Developed with Streamlit")
-
-if __name__ == "__main__":
-    main()
+st.markdown("---")
