@@ -94,13 +94,13 @@ def plot_data(df, column, time_col, prefix):
     sns.heatmap(corr, annot=True, ax=ax)
     st.pyplot(fig)
 
-    # CSV export with unique key
+    # CSV export with unique key including column
     st.download_button(
         label="📥 Download Filtered Data as CSV",
         data=df.to_csv(index=False).encode('utf-8'),
         file_name=f"filtered_data_{prefix}.csv",
         mime="text/csv",
-        key=f"download_btn_{prefix}"
+        key=f"download_btn_{prefix}_{column}"
     )
 
 # Main UI
