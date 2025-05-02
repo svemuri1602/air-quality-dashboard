@@ -6,15 +6,15 @@ import gdown
 
 st.set_page_config(layout="wide")
 
-# Load data from Google Drive using gdown
+# Load data from Google Drive using gdown with fuzzy=True for large files
 @st.cache_data
 def load_data():
     # Google Drive file IDs
     indoor_id = "1YPNmFBB5xo2QJr05NR0elhLEceXA6XBZ"
     outdoor_id = "1nA15O8JQPNmg0ph2uXkV7E-R4tFQwEqQ"
 
-    # Download from Google Drive
-    gdown.download(f"https://drive.google.com/uc?id={indoor_id}", "indoor.csv", quiet=False)
+    # Download from Google Drive using gdown
+    gdown.download(f"https://drive.google.com/uc?id={indoor_id}", "indoor.csv", quiet=False, fuzzy=True)
     gdown.download(f"https://drive.google.com/uc?id={outdoor_id}", "outdoor.csv", quiet=False)
 
     # Load CSVs
