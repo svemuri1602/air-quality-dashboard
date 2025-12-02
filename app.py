@@ -9,8 +9,8 @@ st.set_page_config(layout="wide")
 
 @st.cache_data
 def load_data():
-    indoor_id = "1YPNmFBB5xo2QJr05NR0elhLEceXA6XBZ"
-    outdoor_id = "1nA15O8JQPNmg0ph2uXkV7E-R4tFQwEqQ"
+    indoor_id = "1Kr96yny-8P5GN3SybOdQYSZ11O-_7Vfe"
+    outdoor_id = "1Cvy83xiTqzRnmiSiUCRhMMkAWwpKKA22"
 
     if not os.path.exists("indoor.csv"):
         gdown.download(f"https://drive.google.com/uc?id={indoor_id}", "indoor.csv", quiet=False, fuzzy=True)
